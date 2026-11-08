@@ -3,20 +3,15 @@
 Magpie, a local research tool, found these in llama.cpp's pull requests, and every link and quote below was then checked against
 its source by hand. Nothing here has been run on the V100 yet.
 
-## 1. Finish llama.cpp's open TODO for older NVIDIA cards
+## 1. ~~Finish llama.cpp's open TODO for older NVIDIA cards~~: already done upstream
 <https://github.com/ggml-org/llama.cpp/pull/28846> (merged 2026-09-13)
 
-- **What it is:** a fallback to F32 for BF16 matrix work on GPUs without BF16 hardware. It was done for AMD only. Its author
-  noted that NVIDIA cards before Ampere lack BF16 matrix hardware too, had no NVIDIA card to test on, and left a TODO for
-  someone who does.
-- **Why here:** this repo measures exactly that case: BF16 prefill on the V100 is 1,538 t/s against 6,719 t/s for the same
-  weights in F16.
-- **A hint, not proof:** <https://github.com/ggml-org/llama.cpp/pull/27016> measured on a V100 that forcing F32 for one cuBLAS
-  path cost about 22% (pp64) and 38% (pp512) against F16. That's a different operation, so it only suggests an F32 fallback
-  could land well above today's BF16 number.
-- **First step:** a premise check. Add the F32 fallback for sm_70, rebuild, and rerun this README's `llama-bench` on the BF16
-  Qwen3-4B. If BF16 prefill moves well toward F16, it's a pull request.
-- **Scope:** it speeds up BF16 files only. Converting to F16 (below) stays the fastest path on this card.
+- **Correction (2026-11-08):** this lead was wrong. The pull request's description says the change was made for AMD only, but
+  the code that was merged also covers NVIDIA: on Volta, a BF16 matrix multiply with more than 8 rows already switches to F32
+  (`ggml-cuda.cu`, the `compute_type == GGML_TYPE_BF16 && !fast_bf16_hardware_available(cc)` branch).
+- **What it means here:** the README's measurement (BF16 pp512 1,538 t/s against 6,719 t/s in F16) already runs through that
+  fallback, so it doesn't close the gap. Converting to F16 stays the fast path. Nothing is left to finish upstream.
+- Found when a second Magpie run read the merged code instead of the description.
 
 ## 2. Test the Volta flash-attention crash fix
 <https://github.com/ggml-org/llama.cpp/pull/31518> (open)
